@@ -166,14 +166,17 @@ class VaillantHeatPumpPlatform {
     if (s.cylinderTopC !== undefined) this.temp('hotwater', `${pre}Hot Water Temperature`, s.cylinderTopC, ok);
     for (const z of s.zones) if (z.roomC !== undefined) this.temp(`zone${z.index}`, `${pre}${z.name} Temperature`, z.roomC, ok);
 
-    // Fault: a contact sensor that opens when the heat pump reports any fault code.
+    // Fault: an alarm (leak-type) sensor that trips when the heat pump reports any fault code,
+    // so Apple Home sends an alarm notification, like the water plugin's leak sensors.
     {
-      const name = `${pre}Heat Pump Fault`;
+      const name = `${pre}Vaillant Heat Pump Fault Sensor`;
       const a = this.acc('fault', name, () => {});
       this.info(a);
-      const sv = this.svc(a, this.Service.ContactSensor, name);
+      const old = a.getService(this.Service.ContactSensor); // 0.1.0 used a contact sensor here
+      if (old) a.removeService(old);
+      const sv = this.svc(a, this.Service.LeakSensor, name);
       const fault = s.faults.length > 0;
-      sv.updateCharacteristic(C.ContactSensorState, fault ? C.ContactSensorState.CONTACT_NOT_DETECTED : C.ContactSensorState.CONTACT_DETECTED);
+      sv.updateCharacteristic(C.LeakDetected, fault ? C.LeakDetected.LEAK_DETECTED : C.LeakDetected.LEAK_NOT_DETECTED);
       sv.updateCharacteristic(C.StatusFault, ok ? C.StatusFault.NO_FAULT : C.StatusFault.GENERAL_FAULT);
       const key = s.faults.join('|');
       if (key !== this.lastFaults) {
