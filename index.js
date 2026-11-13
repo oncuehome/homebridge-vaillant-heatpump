@@ -192,15 +192,13 @@ class VaillantHeatPumpPlatform {
     }
 
     if (s.running !== undefined) {
-      // A read-only switch: on while the compressor is drawing power. A tap flips straight back.
+      // A read-only status: on while the compressor is drawing power (over 100 W).
       const sv = mark(this.part(a, this.Service.Switch, 'compressor', 'Vaillant Heat Pump Compressor State'));
       sv.setPrimaryService(true); // the front of the tile: on while the heat pump is working
       const on = sv.getCharacteristic(C.On);
-      this.runningNow = s.running;
-      if (!this.runningWired) {
-        this.runningWired = true;
-        on.onSet(() => { setTimeout(() => on.updateValue(this.runningNow), 300); });
-      }
+      // Read-only at the HomeKit level: Apple Home shows it as a status, not something to tap.
+      const P = this.api.hap.Perms;
+      on.setProps({ perms: [P.PAIRED_READ, P.NOTIFY] });
       on.updateValue(s.running);
       sv.updateCharacteristic(C.StatusFault, ok ? C.StatusFault.NO_FAULT : C.StatusFault.GENERAL_FAULT);
     }

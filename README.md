@@ -17,7 +17,7 @@ It signs in to the **myVAILLANT cloud** with your normal myVAILLANT account and 
 | Vaillant Hot Water Temperature | Top of the hot water cylinder |
 | Vaillant *Zone name* Temperature | One per active heating zone (room temperature) |
 | Vaillant Heat Pump Fault Sensor | An alarm (leak-type) sensor that **trips** when the heat pump reports a fault code, so Apple Home sends an alarm notification. |
-| Vaillant Heat Pump Compressor State | A read-only switch: on while the compressor is drawing power (over 100 W), off when idle. A tap flips straight back. |
+| Vaillant Heat Pump Compressor State | A read-only status (it has no write permission, so it can't be changed from Apple Home): on while the compressor is drawing power (over 100 W), off when idle. |
 | Vaillant Hot Water Boost (optional) | A switch that starts or cancels a hot water boost. Off by default. |
 
 Upgrading from 0.1.x: those versions made a separate tile for every reading. 0.2.0 replaces them with the one tile above, so the old tiles disappear and the new one starts in your default room.

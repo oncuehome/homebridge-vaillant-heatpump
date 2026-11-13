@@ -4,7 +4,7 @@ const assert = require('assert');
 const { VaillantHeatPumpPlatform } = require('./index.js');
 
 class Char { constructor() { this.value = undefined; this.sets = null; }
-  setProps() { return this; } updateValue(v) { this.value = v; return this; } onSet(f) { this.sets = f; return this; } }
+  setProps(p) { this.props = { ...this.props, ...p }; return this; } updateValue(v) { this.value = v; return this; } onSet(f) { this.sets = f; return this; } }
 class Svc { constructor(t, n, sub) { this.t = t; this.UUID = t.id; this.name = n; this.subtype = sub; this.chars = {}; }
   getCharacteristic(c) { return (this.chars[c.id] ||= new Char()); }
   setCharacteristic(c, v) { this.getCharacteristic(c).value = v; return this; }
@@ -25,7 +25,7 @@ class Acc { constructor(n, u) { this.displayName = n; this.UUID = u; this.servic
   removeService(sv) { this.services = this.services.filter((s) => s !== sv); } }
 const registered = [], updated = [], unregistered = [];
 const api = {
-  hap: { Service: S, Characteristic: C, uuid: { generate: (x) => x }, HapStatusError: class extends Error {}, HAPStatus: { SERVICE_COMMUNICATION_FAILURE: -70402 } },
+  hap: { Perms: { PAIRED_READ: 'pr', NOTIFY: 'ev' }, Service: S, Characteristic: C, uuid: { generate: (x) => x }, HapStatusError: class extends Error {}, HAPStatus: { SERVICE_COMMUNICATION_FAILURE: -70402 } },
   platformAccessory: Acc, on() {}, user: { storagePath: () => require('os').tmpdir() },
   registerPlatformAccessories: (_p, _n, a) => registered.push(...a),
   updatePlatformAccessories: (a) => updated.push(...a),
@@ -78,10 +78,7 @@ r.client = { homes: async () => [{ systemId: 'SYS1' }], system: async () => ({ s
 (async () => {
   await r.start(); clearInterval(r.timer); clearInterval(r.etimer);
   assert(unregistered.includes(oldAcc), 'old per-reading accessory unregistered');
-  const run = part('compressor').chars.On;
-  const before = part('compressor').chars.On.value;
-  run.sets(!before); await new Promise((res) => setTimeout(res, 450));
-  assert.strictEqual(run.value, before, 'tap on the read-only switch reverts');
+  assert.deepStrictEqual(part('compressor').chars.On.props.perms, ['pr', 'ev'], 'compressor state is read-only (no write permission)');
   await part('boost').chars.On.sets(true);
   assert.deepStrictEqual(calls, [['SYS1', 0, true]]);
   console.log('platform checks passed');
