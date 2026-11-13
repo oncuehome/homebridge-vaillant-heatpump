@@ -1,66 +1,85 @@
 'use strict';
-// Runs the platform against a minimal stand-in for Homebridge and a fake client.
+// Runs the platform against a minimal stand-in for Homebridge.
 const assert = require('assert');
-const plugin = require('./index.js');
-const { VaillantHeatPumpPlatform } = plugin;
+const { VaillantHeatPumpPlatform } = require('./index.js');
 
 class Char { constructor() { this.value = undefined; this.sets = null; }
   setProps() { return this; } updateValue(v) { this.value = v; return this; } onSet(f) { this.sets = f; return this; } }
-class Svc { constructor(t, n) { this.t = t; this.n = n; this.chars = {}; }
+class Svc { constructor(t, n, sub) { this.t = t; this.UUID = t.id; this.name = n; this.subtype = sub; this.chars = {}; }
   getCharacteristic(c) { return (this.chars[c.id] ||= new Char()); }
   setCharacteristic(c, v) { this.getCharacteristic(c).value = v; return this; }
-  updateCharacteristic(c, v) { this.getCharacteristic(c).value = v; return this; } }
+  updateCharacteristic(c, v) { this.getCharacteristic(c).value = v; return this; }
+  addOptionalCharacteristic() {} }
 const mkChar = (id, extra = {}) => Object.assign({ id }, extra);
 const C = {
-  Name: mkChar('Name'), CurrentTemperature: mkChar('Temp'), LeakDetected: mkChar('Leak', { LEAK_NOT_DETECTED: 0, LEAK_DETECTED: 1 }),
-  OccupancyDetected: mkChar('Occ', { OCCUPANCY_DETECTED: 1, OCCUPANCY_NOT_DETECTED: 0 }), On: mkChar('On'),
+  Name: mkChar('Name'), ConfiguredName: mkChar('CN'), CurrentTemperature: mkChar('Temp'),
+  LeakDetected: mkChar('Leak', { LEAK_NOT_DETECTED: 0, LEAK_DETECTED: 1 }), On: mkChar('On'),
   StatusFault: mkChar('Fault', { NO_FAULT: 0, GENERAL_FAULT: 1 }), Manufacturer: mkChar('Mf'), Model: mkChar('Mo'), SerialNumber: mkChar('Sn'),
 };
-const S = { TemperatureSensor: { id: 'TS' }, LeakSensor: { id: 'LS' }, ContactSensor: { id: 'CS' }, OccupancySensor: { id: 'OS' }, Switch: { id: 'SW' }, AccessoryInformation: { id: 'AI' } };
-class Acc { constructor(n, u) { this.displayName = n; this.UUID = u; this.s = {}; }
-  getService(t) { return this.s[t.id]; } removeService(sv) { for (const k of Object.keys(this.s)) if (this.s[k] === sv) delete this.s[k]; } addService(t, n) { return (this.s[t.id] = new Svc(t, n)); } }
-const registered = [];
-const updated = [];
+const S = { TemperatureSensor: { id: 'TS' }, LeakSensor: { id: 'LS' }, Switch: { id: 'SW' }, AccessoryInformation: { id: 'AI' } };
+class Acc { constructor(n, u) { this.displayName = n; this.UUID = u; this.services = []; }
+  getService(t) { return this.services.find((s) => s.t === t); }
+  getServiceById(t, sub) { return this.services.find((s) => s.t === t && s.subtype === sub); }
+  addService(t, n, sub) { const s = new Svc(t, n, sub); this.services.push(s); return s; }
+  removeService(sv) { this.services = this.services.filter((s) => s !== sv); } }
+const registered = [], updated = [], unregistered = [];
 const api = {
   hap: { Service: S, Characteristic: C, uuid: { generate: (x) => x }, HapStatusError: class extends Error {}, HAPStatus: { SERVICE_COMMUNICATION_FAILURE: -70402 } },
   platformAccessory: Acc, on() {}, user: { storagePath: () => require('os').tmpdir() },
-  registerPlatformAccessories: (_p, _n, a) => registered.push(...a), unregisterPlatformAccessories() {}, updatePlatformAccessories(a) { updated.push(...a); },
+  registerPlatformAccessories: (_p, _n, a) => registered.push(...a),
+  updatePlatformAccessories: (a) => updated.push(...a),
+  unregisterPlatformAccessories: (_p, _n, a) => unregistered.push(...a),
 };
 const log = Object.assign(() => {}, { info() {}, warn() {}, error(m) { throw new Error(m); }, debug() {} });
+const mk = (cfg) => { const p = new VaillantHeatPumpPlatform(log, { username: 'a', password: 'b', ...cfg }, api); p.systemId = 'SYS1'; p.statusFile = require('path').join(require('os').tmpdir(), 'vhp-test.json'); return p; };
 
-const p = new VaillantHeatPumpPlatform(log, { username: 'a', password: 'b', allowControl: true, namePrefix: 'HP' }, api);
+const p = mk({ allowControl: true });
 const calls = [];
 p.client = { setBoost: async (...a) => calls.push(a) };
-p.systemId = 'SYS1'; p.statusFile = require('path').join(require('os').tmpdir(), 'vhp-test.json');
-const state = { outdoorC: 7.5, flowC: 33, cylinderTopC: 48, zones: [{ index: 0, name: 'Downstairs', roomC: 20.4 }], dhw: [{ index: 0, boost: true }], faults: [], running: true };
+const state = { outdoorC: 7.5, flowC: 33, cylinderTopC: 48, zones: [{ index: 0, name: 'Zone 1', roomC: 20.4 }], dhw: [{ index: 0, boost: true }], faults: [], running: true };
 p.apply(state, true);
-const names = registered.map((a) => a.displayName).sort();
-assert.deepStrictEqual(names, ['HP Vaillant Downstairs Temperature', 'HP Vaillant Heat Pump Compressor State', 'HP Vaillant Heat Pump Fault Sensor', 'HP Vaillant Heating Flow Temperature', 'HP Vaillant Hot Water Boost', 'HP Vaillant Hot Water Temperature', 'HP Vaillant Outdoor Temperature']);
-const by = (n) => registered.find((a) => a.displayName === n);
-assert.strictEqual(by('HP Vaillant Outdoor Temperature').s.TS.chars.Temp.value, 7.5);
-assert.strictEqual(by('HP Vaillant Heat Pump Fault Sensor').s.LS.chars.Leak.value, 0);
-assert.strictEqual(by('HP Vaillant Hot Water Boost').s.SW.chars.On.value, true);
-assert.strictEqual(updated.length, 7, 'every tile is saved to the cache on the first poll');
+
+assert.strictEqual(registered.length, 1, 'one accessory holds everything');
+const a = registered[0];
+assert.strictEqual(a.displayName, 'Vaillant Heat Pump');
+const parts = a.services.filter((s) => s.subtype).map((s) => s.name).sort();
+assert.deepStrictEqual(parts, ['Vaillant Heat Pump Compressor State', 'Vaillant Heat Pump Fault Sensor', 'Vaillant Heating Flow Temperature', 'Vaillant Hot Water Boost', 'Vaillant Hot Water Temperature', 'Vaillant Outdoor Temperature', 'Vaillant Zone 1 Temperature']);
+const part = (sub) => a.services.find((s) => s.subtype === sub);
+assert.strictEqual(part('outdoor').chars.Temp.value, 7.5);
+assert.strictEqual(part('fault').chars.Leak.value, 0);
+assert.strictEqual(part('compressor').chars.On.value, true);
+assert.strictEqual(part('compressor').chars.CN.value, 'Vaillant Heat Pump Compressor State', 'configured name set for the drill-in view');
+assert.strictEqual(part('boost').chars.On.value, true);
+assert.strictEqual(updated.length, 1, 'saved to the cache once');
+
 p.apply({ ...state, faults: ['F.22 Low pressure'], running: false, dhw: [{ index: 0, boost: false }] }, true);
-assert.strictEqual(registered.length, 7, 'no duplicates on second poll');
-assert.strictEqual(by('HP Vaillant Heat Pump Fault Sensor').s.LS.chars.Leak.value, 1);
-assert.strictEqual(by('HP Vaillant Heat Pump Compressor State').s.SW.chars.On.value, false);
+assert.strictEqual(registered.length, 1, 'no duplicates on a second poll');
+assert.strictEqual(a.services.filter((s) => s.subtype === 'outdoor').length, 1, 'parts are reused, not added again');
+assert.strictEqual(part('fault').chars.Leak.value, 1);
+assert.strictEqual(part('compressor').chars.On.value, false);
 p.apply(state, false);
-assert.strictEqual(by('HP Vaillant Outdoor Temperature').s.TS.chars.Fault.value, 1, 'cloud down shows as fault on tiles');
-{ // a 0.1.0 cached accessory with a contact sensor gets it replaced
-  const old = new Acc('x', 'u'); old.addService(S.ContactSensor, 'old'); const q2 = new VaillantHeatPumpPlatform(log, { username: 'a', password: 'b' }, { ...api, registerPlatformAccessories() {} });
-  q2.systemId = 'S'; const uuid = api.hap.uuid.generate('homebridge-vaillant-heatpump:S:fault'); old.UUID = uuid; q2.accessories.set(uuid, old); q2.apply(state, true);
-  assert(!old.s.CS && old.s.LS, 'contact sensor removed, leak sensor added');
-}
+assert.strictEqual(part('outdoor').chars.Fault.value, 1, 'cloud down shows as a fault on the parts');
+
+// a removed zone and a turned-off boost switch drop their parts
+const q = mk({ allowControl: false });
+q.apply(state, true);
+const qa = registered[1];
+assert(!qa.services.some((s) => s.subtype === 'boost'), 'no boost switch unless asked for');
+q.apply({ ...state, zones: [] }, true);
+assert(!qa.services.some((s) => s.subtype === 'zone0'), 'a removed zone drops its part');
+
+// the 0.1.x one-accessory-per-reading tiles are removed once the new one is live
+const oldAcc = new Acc('Vaillant Outdoor Temperature', 'old-uuid');
+const r = mk({}); r.accessories.set('old-uuid', oldAcc);
+r.client = { homes: async () => [{ systemId: 'SYS1' }], system: async () => ({ state: { system: { outdoorTemperature: 5 } } }), troubleCodes: async () => [], mpc: async () => ({}), rts: async () => ({}), currentSystem: async () => ({}), buckets: async () => ({}) };
 (async () => {
-  // the running switch ignores taps and returns to the real state
-  const run = by('HP Vaillant Heat Pump Compressor State').s.SW.chars.On; run.sets(false);
-  await new Promise((r) => setTimeout(r, 450)); assert.strictEqual(run.value, true, 'tap on a read-only switch reverts');
-  await by('HP Vaillant Hot Water Boost').s.SW.chars.On.sets(true);
+  await r.start(); clearInterval(r.timer); clearInterval(r.etimer);
+  assert(unregistered.includes(oldAcc), 'old per-reading accessory unregistered');
+  const run = part('compressor').chars.On;
+  const before = part('compressor').chars.On.value;
+  run.sets(!before); await new Promise((res) => setTimeout(res, 450));
+  assert.strictEqual(run.value, before, 'tap on the read-only switch reverts');
+  await part('boost').chars.On.sets(true);
   assert.deepStrictEqual(calls, [['SYS1', 0, true]]);
-  // controls off by default: no switch
-  const reg2 = []; const api2 = { ...api, registerPlatformAccessories: (_p, _n, a) => reg2.push(...a) };
-  const q = new VaillantHeatPumpPlatform(log, { username: 'a', password: 'b' }, api2); q.systemId = 'S'; q.apply(state, true);
-  assert(!reg2.some((a) => /Boost/.test(a.displayName)));
   console.log('platform checks passed');
 })().catch((e) => { console.error(e); process.exit(1); });

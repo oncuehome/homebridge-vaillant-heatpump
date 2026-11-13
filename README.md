@@ -8,7 +8,9 @@ It signs in to the **myVAILLANT cloud** with your normal myVAILLANT account and 
 
 ## What it creates in Apple Home
 
-| Tile | What it shows |
+**One tile, "Vaillant Heat Pump"**, that you open to see the parts inside it. Choose **Show as Separate Tiles** in its settings if you want some parts in different rooms or on the main screen.
+
+| Part | What it shows |
 |---|---|
 | Vaillant Outdoor Temperature | Outdoor sensor |
 | Vaillant Heating Flow Temperature | Water leaving the heat pump to the heating |
@@ -17,6 +19,8 @@ It signs in to the **myVAILLANT cloud** with your normal myVAILLANT account and 
 | Vaillant Heat Pump Fault Sensor | An alarm (leak-type) sensor that **trips** when the heat pump reports a fault code, so Apple Home sends an alarm notification. |
 | Vaillant Heat Pump Compressor State | A read-only switch: on while the compressor is drawing power (over 100 W), off when idle. A tap flips straight back. |
 | Vaillant Hot Water Boost (optional) | A switch that starts or cancels a hot water boost. Off by default. |
+
+Upgrading from 0.1.x: those versions made a separate tile for every reading. 0.2.0 replaces them with the one tile above, so the old tiles disappear and the new one starts in your default room.
 
 If the cloud can't be reached, the tiles show "No Response" or a fault in Apple Home until it is back.
 

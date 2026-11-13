@@ -119,13 +119,14 @@ class VaillantHeatPumpPlatform {
   }
 
   // ---- accessories ----
-  acc(id, name, setup) {
-    const uuid = this.api.hap.uuid.generate(`${PLUGIN_NAME}:${this.systemId}:${id}`);
+  // One accessory, "Vaillant Heat Pump", with every reading as a part of it. Apple Home shows one tile you can
+  // open, and "Show as Separate Tiles" splits the parts out if you want them in different rooms.
+  hub(name) {
+    const uuid = this.api.hap.uuid.generate(`${PLUGIN_NAME}:${this.systemId}:heatpump`);
     this.live.add(uuid);
     let a = this.accessories.get(uuid);
     if (!a) {
       a = new this.api.platformAccessory(name, uuid);
-      setup(a);
       this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [a]);
       this.accessories.set(uuid, a);
     }
@@ -133,10 +134,13 @@ class VaillantHeatPumpPlatform {
     return a;
   }
 
-  svc(a, type, name) {
-    let s = a.getService(type);
-    if (!s) { s = a.addService(type, name); }
+  // A part of the accessory, found by subtype so the same one is reused on every poll and restart.
+  part(a, type, subtype, name) {
+    let s = a.getServiceById(type, subtype);
+    if (!s) s = a.addService(type, name, subtype);
     s.setCharacteristic(this.Characteristic.Name, name);
+    s.addOptionalCharacteristic(this.Characteristic.ConfiguredName);
+    s.setCharacteristic(this.Characteristic.ConfiguredName, name);
     return s;
   }
 
@@ -148,34 +152,33 @@ class VaillantHeatPumpPlatform {
       .setCharacteristic(this.Characteristic.SerialNumber, String(this.systemId).slice(0, 16));
   }
 
-  temp(id, name, c, ok) {
-    const a = this.acc(id, name, () => {});
-    this.info(a);
-    const s = this.svc(a, this.Service.TemperatureSensor, name);
+  temp(a, id, name, c, ok) {
+    const s = this.part(a, this.Service.TemperatureSensor, id, name);
     const C = this.Characteristic;
     s.getCharacteristic(C.CurrentTemperature).setProps({ minValue: -50, maxValue: 100 });
     if (c !== undefined) s.updateCharacteristic(C.CurrentTemperature, Math.round(c * 10) / 10);
     s.updateCharacteristic(C.StatusFault, ok ? C.StatusFault.NO_FAULT : C.StatusFault.GENERAL_FAULT);
+    return s;
   }
 
   apply(s, ok) {
     const C = this.Characteristic;
     const pre = this.config.namePrefix ? `${this.config.namePrefix} ` : '';
     this.live.clear();
-    if (s.outdoorC !== undefined) this.temp('outdoor', `${pre}Vaillant Outdoor Temperature`, s.outdoorC, ok);
-    if (s.flowC !== undefined) this.temp('flow', `${pre}Vaillant Heating Flow Temperature`, s.flowC, ok);
-    if (s.cylinderTopC !== undefined) this.temp('hotwater', `${pre}Vaillant Hot Water Temperature`, s.cylinderTopC, ok);
-    for (const z of s.zones) if (z.roomC !== undefined) this.temp(`zone${z.index}`, `${pre}Vaillant ${z.name} Temperature`, z.roomC, ok);
+    const a = this.hub(`${pre}Vaillant Heat Pump`);
+    this.info(a);
+    const keep = new Set();
+    const mark = (svc) => { keep.add(svc); return svc; };
+
+    if (s.outdoorC !== undefined) mark(this.temp(a, 'outdoor', 'Vaillant Outdoor Temperature', s.outdoorC, ok));
+    if (s.flowC !== undefined) mark(this.temp(a, 'flow', 'Vaillant Heating Flow Temperature', s.flowC, ok));
+    if (s.cylinderTopC !== undefined) mark(this.temp(a, 'hotwater', 'Vaillant Hot Water Temperature', s.cylinderTopC, ok));
+    for (const z of s.zones) if (z.roomC !== undefined) mark(this.temp(a, `zone${z.index}`, `Vaillant ${z.name} Temperature`, z.roomC, ok));
 
     // Fault: an alarm (leak-type) sensor that trips when the heat pump reports any fault code,
     // so Apple Home sends an alarm notification, like the water plugin's leak sensors.
     {
-      const name = `${pre}Vaillant Heat Pump Fault Sensor`;
-      const a = this.acc('fault', name, () => {});
-      this.info(a);
-      const old = a.getService(this.Service.ContactSensor); // 0.1.0 used a contact sensor here
-      if (old) a.removeService(old);
-      const sv = this.svc(a, this.Service.LeakSensor, name);
+      const sv = mark(this.part(a, this.Service.LeakSensor, 'fault', 'Vaillant Heat Pump Fault Sensor'));
       const fault = s.faults.length > 0;
       sv.updateCharacteristic(C.LeakDetected, fault ? C.LeakDetected.LEAK_DETECTED : C.LeakDetected.LEAK_NOT_DETECTED);
       sv.updateCharacteristic(C.StatusFault, ok ? C.StatusFault.NO_FAULT : C.StatusFault.GENERAL_FAULT);
@@ -190,12 +193,7 @@ class VaillantHeatPumpPlatform {
 
     if (s.running !== undefined) {
       // A read-only switch: on while the compressor is drawing power. A tap flips straight back.
-      const name = `${pre}Vaillant Heat Pump Compressor State`;
-      const a = this.acc('running', name, () => {});
-      this.info(a);
-      const old = a.getService(this.Service.OccupancySensor); // 0.1.0 used an occupancy sensor here
-      if (old) a.removeService(old);
-      const sv = this.svc(a, this.Service.Switch, name);
+      const sv = mark(this.part(a, this.Service.Switch, 'compressor', 'Vaillant Heat Pump Compressor State'));
       const on = sv.getCharacteristic(C.On);
       this.runningNow = s.running;
       if (!this.runningWired) {
@@ -208,10 +206,7 @@ class VaillantHeatPumpPlatform {
 
     if (this.allowControl && s.dhw[0]) {
       const d = s.dhw[0];
-      const name = `${pre}Vaillant Hot Water Boost`;
-      const a = this.acc('boost', name, () => {});
-      this.info(a);
-      const sv = this.svc(a, this.Service.Switch, name);
+      const sv = mark(this.part(a, this.Service.Switch, 'boost', 'Vaillant Hot Water Boost'));
       const on = sv.getCharacteristic(C.On);
       if (!this.boostWired) {
         this.boostWired = true;
@@ -228,14 +223,17 @@ class VaillantHeatPumpPlatform {
       on.updateValue(d.boost);
     }
 
-    // Tell Homebridge to save the names and services we just set on tiles it restored from its cache;
-    // without this the saved copy keeps the old ones and they come back after the next restart.
-    if (!this.cacheSynced) {
-      this.cacheSynced = true;
-      const mine = [...this.live].map((u) => this.accessories.get(u)).filter(Boolean);
-      if (mine.length) this.api.updatePlatformAccessories(mine);
+    // Parts that are no longer wanted (a zone removed, the boost switch turned off).
+    for (const svc of [...a.services]) {
+      if (svc.UUID === this.Service.AccessoryInformation.UUID || keep.has(svc)) continue;
+      if (svc.subtype) a.removeService(svc);
     }
 
+    // The tiles this replaces (0.1.x made one accessory per reading) are removed by start().
+    if (!this.cacheSynced) {
+      this.cacheSynced = true;
+      this.api.updatePlatformAccessories([a]);
+    }
   }
 }
 

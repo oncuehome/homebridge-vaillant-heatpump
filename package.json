@@ -1,7 +1,7 @@
 {
   "displayName": "Homebridge Vaillant Heat Pump",
   "name": "homebridge-vaillant-heatpump",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Monitor a Vaillant air source heat pump (myVAILLANT cloud) in Apple Home: temperatures, running and fault sensors, daily energy and COP in the log, optional hot water boost switch.",
   "license": "Apache-2.0",
   "author": "On Cue Home",
