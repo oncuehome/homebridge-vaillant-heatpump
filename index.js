@@ -163,7 +163,7 @@ class VaillantHeatPumpPlatform {
     this.live.clear();
     if (s.outdoorC !== undefined) this.temp('outdoor', `${pre}Outdoor Temperature`, s.outdoorC, ok);
     if (s.flowC !== undefined) this.temp('flow', `${pre}Heating Flow Temperature`, s.flowC, ok);
-    if (s.cylinderTopC !== undefined) this.temp('hotwater', `${pre}Hot Water Temperature`, s.cylinderTopC, ok);
+    if (s.cylinderTopC !== undefined) this.temp('hotwater', `${pre}Vaillant Hot Water Temperature`, s.cylinderTopC, ok);
     for (const z of s.zones) if (z.roomC !== undefined) this.temp(`zone${z.index}`, `${pre}${z.name} Temperature`, z.roomC, ok);
 
     // Fault: an alarm (leak-type) sensor that trips when the heat pump reports any fault code,

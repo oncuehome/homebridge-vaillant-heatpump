@@ -12,7 +12,7 @@ It signs in to the **myVAILLANT cloud** with your normal myVAILLANT account and 
 |---|---|
 | Outdoor Temperature | Outdoor sensor |
 | Heating Flow Temperature | Water leaving the heat pump to the heating |
-| Hot Water Temperature | Top of the hot water cylinder |
+| Vaillant Hot Water Temperature | Top of the hot water cylinder |
 | *Zone name* Temperature | One per active heating zone (room temperature) |
 | Vaillant Heat Pump Fault Sensor | An alarm (leak-type) sensor that **trips** when the heat pump reports a fault code, so Apple Home sends an alarm notification. |
 | Heat Pump Running | Occupied while the heat pump is drawing power (over 100 W) |
