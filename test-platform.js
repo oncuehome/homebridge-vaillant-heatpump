@@ -20,10 +20,11 @@ const S = { TemperatureSensor: { id: 'TS' }, LeakSensor: { id: 'LS' }, ContactSe
 class Acc { constructor(n, u) { this.displayName = n; this.UUID = u; this.s = {}; }
   getService(t) { return this.s[t.id]; } removeService(sv) { for (const k of Object.keys(this.s)) if (this.s[k] === sv) delete this.s[k]; } addService(t, n) { return (this.s[t.id] = new Svc(t, n)); } }
 const registered = [];
+const updated = [];
 const api = {
   hap: { Service: S, Characteristic: C, uuid: { generate: (x) => x }, HapStatusError: class extends Error {}, HAPStatus: { SERVICE_COMMUNICATION_FAILURE: -70402 } },
   platformAccessory: Acc, on() {}, user: { storagePath: () => require('os').tmpdir() },
-  registerPlatformAccessories: (_p, _n, a) => registered.push(...a), unregisterPlatformAccessories() {},
+  registerPlatformAccessories: (_p, _n, a) => registered.push(...a), unregisterPlatformAccessories() {}, updatePlatformAccessories(a) { updated.push(...a); },
 };
 const log = Object.assign(() => {}, { info() {}, warn() {}, error(m) { throw new Error(m); }, debug() {} });
 
@@ -39,6 +40,7 @@ const by = (n) => registered.find((a) => a.displayName === n);
 assert.strictEqual(by('HP Vaillant Outdoor Temperature').s.TS.chars.Temp.value, 7.5);
 assert.strictEqual(by('HP Vaillant Heat Pump Fault Sensor').s.LS.chars.Leak.value, 0);
 assert.strictEqual(by('HP Vaillant Hot Water Boost').s.SW.chars.On.value, true);
+assert.strictEqual(updated.length, 7, 'every tile is saved to the cache on the first poll');
 p.apply({ ...state, faults: ['F.22 Low pressure'], running: false, dhw: [{ index: 0, boost: false }] }, true);
 assert.strictEqual(registered.length, 7, 'no duplicates on second poll');
 assert.strictEqual(by('HP Vaillant Heat Pump Fault Sensor').s.LS.chars.Leak.value, 1);

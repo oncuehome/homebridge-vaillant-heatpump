@@ -142,7 +142,8 @@ class VaillantHeatPumpPlatform {
 
   info(a) {
     const i = a.getService(this.Service.AccessoryInformation) || a.addService(this.Service.AccessoryInformation);
-    i.setCharacteristic(this.Characteristic.Manufacturer, 'Vaillant')
+    i.setCharacteristic(this.Characteristic.Name, a.displayName)
+      .setCharacteristic(this.Characteristic.Manufacturer, 'Vaillant')
       .setCharacteristic(this.Characteristic.Model, 'myVAILLANT')
       .setCharacteristic(this.Characteristic.SerialNumber, String(this.systemId).slice(0, 16));
   }
@@ -226,6 +227,15 @@ class VaillantHeatPumpPlatform {
       }
       on.updateValue(d.boost);
     }
+
+    // Tell Homebridge to save the names and services we just set on tiles it restored from its cache;
+    // without this the saved copy keeps the old ones and they come back after the next restart.
+    if (!this.cacheSynced) {
+      this.cacheSynced = true;
+      const mine = [...this.live].map((u) => this.accessories.get(u)).filter(Boolean);
+      if (mine.length) this.api.updatePlatformAccessories(mine);
+    }
+
   }
 }
 
