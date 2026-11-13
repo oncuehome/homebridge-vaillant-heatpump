@@ -189,7 +189,7 @@ class VaillantHeatPumpPlatform {
 
     if (s.running !== undefined) {
       // A read-only switch: on while the compressor is drawing power. A tap flips straight back.
-      const name = `${pre}Vaillant Heat Pump Running`;
+      const name = `${pre}Vaillant Heat Pump Compressor State`;
       const a = this.acc('running', name, () => {});
       this.info(a);
       const old = a.getService(this.Service.OccupancySensor); // 0.1.0 used an occupancy sensor here

@@ -34,7 +34,7 @@ p.systemId = 'SYS1'; p.statusFile = require('path').join(require('os').tmpdir(),
 const state = { outdoorC: 7.5, flowC: 33, cylinderTopC: 48, zones: [{ index: 0, name: 'Downstairs', roomC: 20.4 }], dhw: [{ index: 0, boost: true }], faults: [], running: true };
 p.apply(state, true);
 const names = registered.map((a) => a.displayName).sort();
-assert.deepStrictEqual(names, ['HP Vaillant Downstairs Temperature', 'HP Vaillant Heat Pump Fault Sensor', 'HP Vaillant Heat Pump Running', 'HP Vaillant Heating Flow Temperature', 'HP Vaillant Hot Water Boost', 'HP Vaillant Hot Water Temperature', 'HP Vaillant Outdoor Temperature']);
+assert.deepStrictEqual(names, ['HP Vaillant Downstairs Temperature', 'HP Vaillant Heat Pump Fault Sensor', 'HP Vaillant Heat Pump Compressor State', 'HP Vaillant Heating Flow Temperature', 'HP Vaillant Hot Water Boost', 'HP Vaillant Hot Water Temperature', 'HP Vaillant Outdoor Temperature']);
 const by = (n) => registered.find((a) => a.displayName === n);
 assert.strictEqual(by('HP Vaillant Outdoor Temperature').s.TS.chars.Temp.value, 7.5);
 assert.strictEqual(by('HP Vaillant Heat Pump Fault Sensor').s.LS.chars.Leak.value, 0);
@@ -42,7 +42,7 @@ assert.strictEqual(by('HP Vaillant Hot Water Boost').s.SW.chars.On.value, true);
 p.apply({ ...state, faults: ['F.22 Low pressure'], running: false, dhw: [{ index: 0, boost: false }] }, true);
 assert.strictEqual(registered.length, 7, 'no duplicates on second poll');
 assert.strictEqual(by('HP Vaillant Heat Pump Fault Sensor').s.LS.chars.Leak.value, 1);
-assert.strictEqual(by('HP Vaillant Heat Pump Running').s.SW.chars.On.value, false);
+assert.strictEqual(by('HP Vaillant Heat Pump Compressor State').s.SW.chars.On.value, false);
 p.apply(state, false);
 assert.strictEqual(by('HP Vaillant Outdoor Temperature').s.TS.chars.Fault.value, 1, 'cloud down shows as fault on tiles');
 { // a 0.1.0 cached accessory with a contact sensor gets it replaced
@@ -52,7 +52,7 @@ assert.strictEqual(by('HP Vaillant Outdoor Temperature').s.TS.chars.Fault.value,
 }
 (async () => {
   // the running switch ignores taps and returns to the real state
-  const run = by('HP Vaillant Heat Pump Running').s.SW.chars.On; run.sets(false);
+  const run = by('HP Vaillant Heat Pump Compressor State').s.SW.chars.On; run.sets(false);
   await new Promise((r) => setTimeout(r, 450)); assert.strictEqual(run.value, true, 'tap on a read-only switch reverts');
   await by('HP Vaillant Hot Water Boost').s.SW.chars.On.sets(true);
   assert.deepStrictEqual(calls, [['SYS1', 0, true]]);
