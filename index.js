@@ -188,11 +188,20 @@ class VaillantHeatPumpPlatform {
     }
 
     if (s.running !== undefined) {
+      // A read-only switch: on while the compressor is drawing power. A tap flips straight back.
       const name = `${pre}Vaillant Heat Pump Running`;
       const a = this.acc('running', name, () => {});
       this.info(a);
-      const sv = this.svc(a, this.Service.OccupancySensor, name);
-      sv.updateCharacteristic(C.OccupancyDetected, s.running ? C.OccupancyDetected.OCCUPANCY_DETECTED : C.OccupancyDetected.OCCUPANCY_NOT_DETECTED);
+      const old = a.getService(this.Service.OccupancySensor); // 0.1.0 used an occupancy sensor here
+      if (old) a.removeService(old);
+      const sv = this.svc(a, this.Service.Switch, name);
+      const on = sv.getCharacteristic(C.On);
+      this.runningNow = s.running;
+      if (!this.runningWired) {
+        this.runningWired = true;
+        on.onSet(() => { setTimeout(() => on.updateValue(this.runningNow), 300); });
+      }
+      on.updateValue(s.running);
       sv.updateCharacteristic(C.StatusFault, ok ? C.StatusFault.NO_FAULT : C.StatusFault.GENERAL_FAULT);
     }
 

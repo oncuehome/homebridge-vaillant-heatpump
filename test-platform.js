@@ -42,7 +42,7 @@ assert.strictEqual(by('HP Vaillant Hot Water Boost').s.SW.chars.On.value, true);
 p.apply({ ...state, faults: ['F.22 Low pressure'], running: false, dhw: [{ index: 0, boost: false }] }, true);
 assert.strictEqual(registered.length, 7, 'no duplicates on second poll');
 assert.strictEqual(by('HP Vaillant Heat Pump Fault Sensor').s.LS.chars.Leak.value, 1);
-assert.strictEqual(by('HP Vaillant Heat Pump Running').s.OS.chars.Occ.value, 0);
+assert.strictEqual(by('HP Vaillant Heat Pump Running').s.SW.chars.On.value, false);
 p.apply(state, false);
 assert.strictEqual(by('HP Vaillant Outdoor Temperature').s.TS.chars.Fault.value, 1, 'cloud down shows as fault on tiles');
 { // a 0.1.0 cached accessory with a contact sensor gets it replaced
@@ -51,6 +51,9 @@ assert.strictEqual(by('HP Vaillant Outdoor Temperature').s.TS.chars.Fault.value,
   assert(!old.s.CS && old.s.LS, 'contact sensor removed, leak sensor added');
 }
 (async () => {
+  // the running switch ignores taps and returns to the real state
+  const run = by('HP Vaillant Heat Pump Running').s.SW.chars.On; run.sets(false);
+  await new Promise((r) => setTimeout(r, 450)); assert.strictEqual(run.value, true, 'tap on a read-only switch reverts');
   await by('HP Vaillant Hot Water Boost').s.SW.chars.On.sets(true);
   assert.deepStrictEqual(calls, [['SYS1', 0, true]]);
   // controls off by default: no switch
