@@ -10,13 +10,13 @@ It signs in to the **myVAILLANT cloud** with your normal myVAILLANT account and 
 
 | Tile | What it shows |
 |---|---|
-| Outdoor Temperature | Outdoor sensor |
-| Heating Flow Temperature | Water leaving the heat pump to the heating |
+| Vaillant Outdoor Temperature | Outdoor sensor |
+| Vaillant Heating Flow Temperature | Water leaving the heat pump to the heating |
 | Vaillant Hot Water Temperature | Top of the hot water cylinder |
-| *Zone name* Temperature | One per active heating zone (room temperature) |
+| Vaillant *Zone name* Temperature | One per active heating zone (room temperature) |
 | Vaillant Heat Pump Fault Sensor | An alarm (leak-type) sensor that **trips** when the heat pump reports a fault code, so Apple Home sends an alarm notification. |
-| Heat Pump Running | Occupied while the heat pump is drawing power (over 100 W) |
-| Hot Water Boost (optional) | A switch that starts or cancels a hot water boost. Off by default. |
+| Vaillant Heat Pump Running | Occupied while the heat pump is drawing power (over 100 W) |
+| Vaillant Hot Water Boost (optional) | A switch that starts or cancels a hot water boost. Off by default. |
 
 If the cloud can't be reached, the tiles show "No Response" or a fault in Apple Home until it is back.
 

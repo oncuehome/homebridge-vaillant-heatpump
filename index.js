@@ -161,10 +161,10 @@ class VaillantHeatPumpPlatform {
     const C = this.Characteristic;
     const pre = this.config.namePrefix ? `${this.config.namePrefix} ` : '';
     this.live.clear();
-    if (s.outdoorC !== undefined) this.temp('outdoor', `${pre}Outdoor Temperature`, s.outdoorC, ok);
-    if (s.flowC !== undefined) this.temp('flow', `${pre}Heating Flow Temperature`, s.flowC, ok);
+    if (s.outdoorC !== undefined) this.temp('outdoor', `${pre}Vaillant Outdoor Temperature`, s.outdoorC, ok);
+    if (s.flowC !== undefined) this.temp('flow', `${pre}Vaillant Heating Flow Temperature`, s.flowC, ok);
     if (s.cylinderTopC !== undefined) this.temp('hotwater', `${pre}Vaillant Hot Water Temperature`, s.cylinderTopC, ok);
-    for (const z of s.zones) if (z.roomC !== undefined) this.temp(`zone${z.index}`, `${pre}${z.name} Temperature`, z.roomC, ok);
+    for (const z of s.zones) if (z.roomC !== undefined) this.temp(`zone${z.index}`, `${pre}Vaillant ${z.name} Temperature`, z.roomC, ok);
 
     // Fault: an alarm (leak-type) sensor that trips when the heat pump reports any fault code,
     // so Apple Home sends an alarm notification, like the water plugin's leak sensors.
@@ -188,7 +188,7 @@ class VaillantHeatPumpPlatform {
     }
 
     if (s.running !== undefined) {
-      const name = `${pre}Heat Pump Running`;
+      const name = `${pre}Vaillant Heat Pump Running`;
       const a = this.acc('running', name, () => {});
       this.info(a);
       const sv = this.svc(a, this.Service.OccupancySensor, name);
@@ -198,7 +198,7 @@ class VaillantHeatPumpPlatform {
 
     if (this.allowControl && s.dhw[0]) {
       const d = s.dhw[0];
-      const name = `${pre}Hot Water Boost`;
+      const name = `${pre}Vaillant Hot Water Boost`;
       const a = this.acc('boost', name, () => {});
       this.info(a);
       const sv = this.svc(a, this.Service.Switch, name);

@@ -34,24 +34,24 @@ p.systemId = 'SYS1'; p.statusFile = require('path').join(require('os').tmpdir(),
 const state = { outdoorC: 7.5, flowC: 33, cylinderTopC: 48, zones: [{ index: 0, name: 'Downstairs', roomC: 20.4 }], dhw: [{ index: 0, boost: true }], faults: [], running: true };
 p.apply(state, true);
 const names = registered.map((a) => a.displayName).sort();
-assert.deepStrictEqual(names, ['HP Downstairs Temperature', 'HP Heat Pump Running', 'HP Heating Flow Temperature', 'HP Hot Water Boost', 'HP Outdoor Temperature', 'HP Vaillant Heat Pump Fault Sensor', 'HP Vaillant Hot Water Temperature']);
+assert.deepStrictEqual(names, ['HP Vaillant Downstairs Temperature', 'HP Vaillant Heat Pump Fault Sensor', 'HP Vaillant Heat Pump Running', 'HP Vaillant Heating Flow Temperature', 'HP Vaillant Hot Water Boost', 'HP Vaillant Hot Water Temperature', 'HP Vaillant Outdoor Temperature']);
 const by = (n) => registered.find((a) => a.displayName === n);
-assert.strictEqual(by('HP Outdoor Temperature').s.TS.chars.Temp.value, 7.5);
+assert.strictEqual(by('HP Vaillant Outdoor Temperature').s.TS.chars.Temp.value, 7.5);
 assert.strictEqual(by('HP Vaillant Heat Pump Fault Sensor').s.LS.chars.Leak.value, 0);
-assert.strictEqual(by('HP Hot Water Boost').s.SW.chars.On.value, true);
+assert.strictEqual(by('HP Vaillant Hot Water Boost').s.SW.chars.On.value, true);
 p.apply({ ...state, faults: ['F.22 Low pressure'], running: false, dhw: [{ index: 0, boost: false }] }, true);
 assert.strictEqual(registered.length, 7, 'no duplicates on second poll');
 assert.strictEqual(by('HP Vaillant Heat Pump Fault Sensor').s.LS.chars.Leak.value, 1);
-assert.strictEqual(by('HP Heat Pump Running').s.OS.chars.Occ.value, 0);
+assert.strictEqual(by('HP Vaillant Heat Pump Running').s.OS.chars.Occ.value, 0);
 p.apply(state, false);
-assert.strictEqual(by('HP Outdoor Temperature').s.TS.chars.Fault.value, 1, 'cloud down shows as fault on tiles');
+assert.strictEqual(by('HP Vaillant Outdoor Temperature').s.TS.chars.Fault.value, 1, 'cloud down shows as fault on tiles');
 { // a 0.1.0 cached accessory with a contact sensor gets it replaced
   const old = new Acc('x', 'u'); old.addService(S.ContactSensor, 'old'); const q2 = new VaillantHeatPumpPlatform(log, { username: 'a', password: 'b' }, { ...api, registerPlatformAccessories() {} });
   q2.systemId = 'S'; const uuid = api.hap.uuid.generate('homebridge-vaillant-heatpump:S:fault'); old.UUID = uuid; q2.accessories.set(uuid, old); q2.apply(state, true);
   assert(!old.s.CS && old.s.LS, 'contact sensor removed, leak sensor added');
 }
 (async () => {
-  await by('HP Hot Water Boost').s.SW.chars.On.sets(true);
+  await by('HP Vaillant Hot Water Boost').s.SW.chars.On.sets(true);
   assert.deepStrictEqual(calls, [['SYS1', 0, true]]);
   // controls off by default: no switch
   const reg2 = []; const api2 = { ...api, registerPlatformAccessories: (_p, _n, a) => reg2.push(...a) };
