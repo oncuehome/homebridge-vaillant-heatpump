@@ -1,0 +1,26 @@
+{
+  "pluginAlias": "VaillantHeatPump",
+  "pluginType": "platform",
+  "singular": true,
+  "headerDisplay": "Reads your Vaillant heat pump through the myVAILLANT cloud, the same account the myVAILLANT app uses. Vaillant publishes no official interface, so this can stop working if they change theirs. Use an account that only you use, and keep the polling gentle.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": { "title": "Name", "type": "string", "default": "Vaillant Heat Pump", "required": true },
+      "username": { "title": "myVAILLANT email", "type": "string", "required": true },
+      "password": { "title": "myVAILLANT password", "type": "string", "required": true },
+      "country": { "title": "Country", "type": "string", "default": "unitedkingdom", "description": "As in the myVAILLANT app, lower case without spaces: unitedkingdom, germany, netherlands, ireland, …" },
+      "brand": { "title": "Brand", "type": "string", "default": "vaillant", "oneOf": [
+        { "title": "Vaillant", "enum": ["vaillant"] },
+        { "title": "Saunier Duval", "enum": ["sdbg"] },
+        { "title": "Bulex", "enum": ["bulex"] },
+        { "title": "Glow-worm", "enum": ["glow-worm"] }
+      ] },
+      "systemId": { "title": "System ID (optional)", "type": "string", "description": "Only needed if the account has more than one heating system. The log shows the ID that was found." },
+      "namePrefix": { "title": "Name prefix (optional)", "type": "string", "description": "Put in front of every tile, for example Heat Pump." },
+      "pollSeconds": { "title": "Poll interval (seconds)", "type": "integer", "default": 120, "minimum": 60, "maximum": 900 },
+      "energyMinutes": { "title": "Energy check interval (minutes)", "type": "integer", "default": 15, "minimum": 5, "maximum": 120 },
+      "allowControl": { "title": "Add a Hot Water Boost switch", "type": "boolean", "default": false, "description": "Off by default: with it on, Apple Home (and anyone with access to your Home) can start a hot water boost, which heats the cylinder with the heat pump and, depending on your system, the immersion heater." }
+    }
+  }
+}
