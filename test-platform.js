@@ -34,7 +34,7 @@ p.systemId = 'SYS1'; p.statusFile = require('path').join(require('os').tmpdir(),
 const state = { outdoorC: 7.5, flowC: 33, cylinderTopC: 48, zones: [{ index: 0, name: 'Downstairs', roomC: 20.4 }], dhw: [{ index: 0, boost: true }], faults: [], running: true };
 p.apply(state, true);
 const names = registered.map((a) => a.displayName).sort();
-assert.deepStrictEqual(names, ['HP Vaillant Downstairs Temperature', 'HP Vaillant Heat Pump Fault Sensor', 'HP Vaillant Heat Pump Compressor State', 'HP Vaillant Heating Flow Temperature', 'HP Vaillant Hot Water Boost', 'HP Vaillant Hot Water Temperature', 'HP Vaillant Outdoor Temperature']);
+assert.deepStrictEqual(names, ['HP Vaillant Downstairs Temperature', 'HP Vaillant Heat Pump Compressor State', 'HP Vaillant Heat Pump Fault Sensor', 'HP Vaillant Heating Flow Temperature', 'HP Vaillant Hot Water Boost', 'HP Vaillant Hot Water Temperature', 'HP Vaillant Outdoor Temperature']);
 const by = (n) => registered.find((a) => a.displayName === n);
 assert.strictEqual(by('HP Vaillant Outdoor Temperature').s.TS.chars.Temp.value, 7.5);
 assert.strictEqual(by('HP Vaillant Heat Pump Fault Sensor').s.LS.chars.Leak.value, 0);
