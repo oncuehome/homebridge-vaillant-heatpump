@@ -8,7 +8,7 @@ It signs in to the **myVAILLANT cloud** with your normal myVAILLANT account and 
 
 ## What it creates in Apple Home
 
-**One tile, "Vaillant Heat Pump"**, that shows the hot water temperature on its front and that you open to see the parts inside it. Choose **Show as Separate Tiles** in its settings if you want some parts in different rooms or on the main screen.
+**One tile, "Vaillant Heat Pump"**, that shows the compressor state (on or off) on its front and that you open to see the parts inside it. Choose **Show as Separate Tiles** in its settings if you want some parts in different rooms or on the main screen.
 
 | Part | What it shows |
 |---|---|

@@ -52,8 +52,8 @@ assert.strictEqual(part('compressor').chars.On.value, true);
 assert.strictEqual(part('compressor').chars.CN.value, 'Vaillant Heat Pump Compressor State', 'configured name set for the drill-in view');
 assert.strictEqual(part('boost').chars.On.value, true);
 assert.strictEqual(updated.length, 1, 'saved to the cache once');
-assert.strictEqual(part('hotwater').primary, true, 'hot water temperature is the front of the tile');
-assert(!a.services.some((s) => s.subtype !== 'hotwater' && s.primary), 'nothing else is primary');
+assert.strictEqual(part('compressor').primary, true, 'compressor state is the front of the tile');
+assert(!a.services.some((s) => s.subtype !== 'compressor' && s.primary), 'nothing else is primary');
 
 p.apply({ ...state, faults: ['F.22 Low pressure'], running: false, dhw: [{ index: 0, boost: false }] }, true);
 assert.strictEqual(registered.length, 1, 'no duplicates on a second poll');
